@@ -45,6 +45,7 @@ class MASCoordinator:
         agent_message = await self.__handle_coordination_request(
             coordination_request, choice, agent_stage, request
         )
+        StageProcessor.close_stage_safely(agent_stage)
         return await self.__final_response(client, choice, request, agent_message)
 
     async def __prepare_coordination_request(self, client: AsyncDial, request: Request) -> CoordinationRequest:
@@ -124,6 +125,8 @@ class MASCoordinator:
                 part = delta.content
                 content_parts.append(part)
                 stage.append_content(part)
+                choice.append_content(part)
+
         StageProcessor.close_stage_safely(stage)
         custom_content = getattr(agent_message, "custom_content", None)
         return Message(role=Role.ASSISTANT, content="".join(content_parts), custom_content=custom_content)
