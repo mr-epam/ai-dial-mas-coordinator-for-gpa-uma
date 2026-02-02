@@ -30,13 +30,15 @@ class MASCoordinator:
         self.gpa_endpoint = gpa_endpoint or os.environ.get("GPA_AGENT_ENDPOINT", "")
 
     async def handle_request(self, choice: Choice, request: Request) -> Message:
+        api_key = request.api_key
         client = AsyncDial(
             base_url=self.endpoint,
+            api_key=api_key,
             api_version="2025-01-01-preview",
         )
         coord_stage = StageProcessor.open_stage(choice, "Coordination Request")
         coordination_request = await self.__prepare_coordination_request(client, request)
-        coord_stage.append(coordination_request.model_dump_json())
+        coord_stage.append_content(coordination_request.model_dump_json())
         StageProcessor.close_stage_safely(coord_stage)
 
         agent_stage = StageProcessor.open_stage(choice, "Agent Response")
@@ -55,7 +57,7 @@ class MASCoordinator:
             },
         }
         response = await client.chat.completions.create(
-            model=self.deployment_name,
+            deployment_name=self.deployment_name,
             messages=messages,
             extra_body={"response_format": response_format},
         )
@@ -112,7 +114,7 @@ class MASCoordinator:
         stage = StageProcessor.open_stage(choice, "Final Response")
         content_parts: list[str] = []
         stream = await client.chat.completions.create(
-            model=self.deployment_name,
+            deployment_name=self.deployment_name,
             messages=messages,
             stream=True,
         )
@@ -121,7 +123,7 @@ class MASCoordinator:
             if delta and getattr(delta, "content", None):
                 part = delta.content
                 content_parts.append(part)
-                stage.append(part)
+                stage.append_content(part)
         StageProcessor.close_stage_safely(stage)
         custom_content = getattr(agent_message, "custom_content", None)
         return Message(role=Role.ASSISTANT, content="".join(content_parts), custom_content=custom_content)
