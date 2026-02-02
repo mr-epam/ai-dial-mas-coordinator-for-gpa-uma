@@ -80,10 +80,10 @@ class GPAGateway:
             if cid:
                 headers["x-conversation-id"] = cid
 
-        client = AsyncDial(base_url=self.endpoint, api_version="2025-01-01-preview")
+        client = AsyncDial(base_url=self.endpoint, api_version="2025-01-01-preview", api_key=request.api_key)
         extra = {"extra_headers": headers} if headers else {}
         stream = await client.chat.completions.create(
-            model=_GPA_DEPLOYMENT,
+            deployment_name=_GPA_DEPLOYMENT,
             messages=messages,
             stream=True,
             **extra,
@@ -103,7 +103,7 @@ class GPAGateway:
             part = getattr(delta, "content", None)
             if part:
                 content_parts.append(part)
-                stage.append(part)
+                stage.append_content(part)
             cc = getattr(delta, "custom_content", None)
             if cc is None:
                 continue
@@ -136,7 +136,7 @@ class GPAGateway:
                     s = StageProcessor.open_stage(choice, stg.get("name"))
                     stages_map[idx] = s
                 if stg.get("content"):
-                    s.append(stg["content"])
+                    s.append_content(stg["content"])
                 _add_attachments_to_stage(s, stg.get("attachments") or [])
                 if stg.get("status") == "completed":
                     StageProcessor.close_stage_safely(s)

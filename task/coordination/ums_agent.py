@@ -101,5 +101,5 @@ class UMSAgentGateway:
                         part = (delta.get("content") or "") if isinstance(delta, dict) else ""
                         if part:
                             accumulated.append(part)
-                            stage.append(part)
+                            stage.append_content(part)
         return "".join(accumulated)
