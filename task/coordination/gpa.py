@@ -143,6 +143,14 @@ class GPAGateway:
 
         coordinator_state = {_IS_GPA: True, _GPA_MESSAGES: result_state}
         custom_content = CustomContent(state=coordinator_state, attachments=result_attachments)
+
+        for attachment in result_attachments:
+            choice.add_attachment(
+                Attachment(**attachment.dict(exclude_none=True))
+            )
+            if attachment.type in ("image/png", "image/jpeg"):
+                choice.append_content(f"\n\r![image]({attachment.url})\n\r")
+
         return Message(role=Role.ASSISTANT, content="".join(content_parts), custom_content=custom_content)
 
     def _prepare_gpa_messages(self, request: Request, additional_instructions: Optional[str]) -> list[dict[str, Any]]:
